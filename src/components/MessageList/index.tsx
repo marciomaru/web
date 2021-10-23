@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api } from '../../services/api'
-
+import { api } from '../../services/api';
+import io from 'socket.io-client';
 import styles from './styles.module.scss';
 
 import logoImg from '../../assets/logo.svg';
@@ -14,12 +14,35 @@ type Message = {
     }
 }
 
+const messageQueue: Message[] = [];
+
+const socket = io('http://localhost:4000');
+
+socket.on('new_message', (newMessage: Message) => {
+    messageQueue.push(newMessage);
+})
+
 export function MessageList() {
-    const [message, setMessage] = useState<Message[]>([])
+    const [messages, setMessages] = useState<Message[]>([])
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (messageQueue.length > 0) {
+                setMessages(prevState => [
+                    messageQueue[0],
+                    prevState[0],
+                    prevState[1],
+                ].filter(Boolean));
+
+                messageQueue.shift();
+            }
+        }, 3000)
+
+    }, [])
 
     useEffect(() => {
         api.get<Message[]>('messages/last3').then(response => {
-            setMessage(response.data);
+            setMessages(response.data);
         });
     }, []);
 
@@ -28,18 +51,18 @@ export function MessageList() {
             <img src={logoImg} alt="DoWhile 2021" />
 
             <ul className={styles.messageList}>
-                {message.map(message => {
+                {messages.map(messages => {
                     return (
-                        <li key={message.id} className={styles.message}>
+                        <li key={messages.id} className={styles.message}>
                             <p className={styles.messageContent}>
-                                {message.text}
+                                {messages.text}
                             </p>
 
                             <div className={styles.messageUser}>
                                 <div className={styles.userImage}>
-                                    <img src={message.user.avatar_url} alt={message.user.name} />
+                                    <img src={messages.user.avatar_url} alt={messages.user.name} />
                                 </div>
-                                <span>{message.user.name}</span>
+                                <span>{messages.user.name}</span>
                             </div>
                         </li>
 
