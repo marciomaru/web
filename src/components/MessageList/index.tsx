@@ -9,7 +9,7 @@ type Message = {
     id: string;
     text: string;
     user: {
-        name: string;
+        name: string
         avatar_url: string
     }
 }
